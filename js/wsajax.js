@@ -3,14 +3,14 @@
 // available. The order of priority is WebSockets, MozWebSockets and
 // Ajax. Example of usage:
 //
-//	var com		= io.connect("ws://localhost:9000/ws");
+//	var com		= wsajax.connect("ws://localhost:9000/ws");
 //
 
 (function (window) {
 
-    var io = (function () {
-        if( ! (this instanceof con)) {
-            return new con();
+    var wsajax = (function () {
+        if( ! (this instanceof wsajax)) {
+            return new wsajax();
         }
 
         return this;
@@ -18,22 +18,29 @@
 
     var init = (function () {
         try {
-            method	= WebSocket || MozWebSocket ? true : false
+            websockets		= WebSocket || MozWebSocket ? true : false
+            method		= WebSocket ? "WebSocket" : MozWebSocket ? "MozWebSocket" : "Ajax";
         } catch(err) {
             console.log(err.type)
-            io.prototype.WebSocketsEnabled = false
         }
-        io.prototype.method =
-
+        console.log(method)
+        console.log(websockets)
+        wsajax.prototype.method		= method
+        wsajax.prototype.websockets	= websockets
     })();
 
-    io.prototype = {
+    wsajax.prototype = {
         connect: function(host) {
-            this.method
+            console.log(this.method)
+            console.log("ws = new "+this.method+"("+host+")")
+            return this
         }
     }
+    wsajax.connect = function (host) {
+        return wsajax().connect(host)
+    }
 
-    window.io = io
+    window.wsajax = wsajax
 })(window);
 
 
@@ -52,9 +59,9 @@
 
     // object of tests
     var tests = {
-        // check if con exists
+        // check if wsajax exists
         conExists: function() {
-            if(typeof(con)=="function") {
+            if(typeof(wsajax)=="function") {
                 return true;
             } else {
                 return false;
@@ -64,7 +71,7 @@
 
     // assign global variable
     window.runUnitTests = function() {
-        return execTest(tests.conExists, "check if con exists") ? true : false;
+        return execTest(tests.conExists, "check if wsajax exists") ? true : false;
     }
 
 })();
