@@ -8,13 +8,7 @@
 
 (function (window) {
 
-    var wsajax = (function () {
-        if( ! (this instanceof wsajax)) {
-            return new wsajax();
-        }
-        return this;
-    });
-
+    var wsajax = {};
     // constructor for wsajax
     (function () {
         var method, websockets;
@@ -23,9 +17,9 @@
         var logError = function(err) {
             if(typeof(err)=="object") {
                 if(err.message) {
-                    console.log(err.message)
+                    console.log(err.message);
                 } else {
-                    console.log(err)
+                    console.log(err);
                 }
             }
         }
@@ -33,89 +27,84 @@
         // first check if MozWebSocket is defined Firefox
         try {
             method			= MozWebSocket ? "MozWebSocket" : false;
-            websockets			= true
+            websockets			= true;
         } catch(err) {
             logError(err);
 
             // then check if WebSocket is defined for Chrome
             try {
                 method			= WebSocket ? "WebSocket" : false;
-                websockets		= true
+                websockets		= true;
             } catch(err) {
                 logError(err);
 
                 // default to ajax for all other platforms
-                method			= "Ajax"
-                websockets		= false
+                method			= "Ajax";
+                websockets		= false;
             }
         }
 
         // set values on the wsajax object
-        wsajax.prototype.method		= method;
-        wsajax.prototype.websockets	= websockets;
         wsajax.method			= method;
         wsajax.websockets		= websockets;
+        wsajax.websockets		= false;
     })();
 
-    // set window variable for global use
-    window.wsajax = wsajax
-
-    // connect function usage: wsajax().connect()
-    wsajax.prototype.connect = function(host) {
-        // if host is undefined set host to ...
-        var host		= host ? host : "ws://localhost:9000/ws"
-        var run			= "var ws = new "+this.method+"('"+host+"')"
-        console.log(run)
-        eval(run)
-        return ws
-    }
-
     // connect function usage: wsajax.connect()
-    //   - need to make this work instead of wsajax().connect()
-    // problem:
-    //   - scope of this is wrong
-    wsajax.connect = function (host) {
-        // if host is undefined set host to ...
-        var host		= host ? host : "ws://localhost:9000/ws"
-        var run			= "var ws = new "+wsajax.method+"('"+host+"')"
-        eval(run)
-        return ws
+    wsajax.connect = function (config) {
+        config			= config ? config : {}
+        if(this.websockets) {
+            // if websocket host is undefined set host to ...
+            this.host		= config.webSocketHost
+                ? config.webSocketHost
+                : "ws://localhost:8600/api";
+            this.connection	= eval("new "+wsajax.method+"('"+host+"');");
+            return this;
+        } else {
+            // if websocket host is undefined set host to ...
+            this.host		= config.ajaxHost
+                ? config.ajaxHost
+                : "http://localhost:8600/api";
 
-        // bad fix for scope of this
-//        return wsajax().connect.call(this(),host)
-    }
-
-})(window);
-
-
-
-// Unit test logging
-(function() {
-    // test to see if script loaded
-    console.log("connect.js has loaded")
-
-    var execTest = function(test, msg) {
-        var t	= test();
-        var r	= t ? "\tSuccess" : "\t\t\t! FAILED";
-        console.log(msg+":"+r);
-        return t;
-    }
-
-    // object of tests
-    var tests = {
-        // check if wsajax exists
-        conExists: function() {
-            if(typeof(wsajax)=="function") {
-                return true;
-            } else {
-                return false;
-            }
+            console.log("start ajax polling...")
+            this.connection	= this.ajax();
+            return this;
         }
     }
 
-    // assign global variable
-    window.runUnitTests = function() {
-        return execTest(tests.conExists, "check if wsajax exists") ? true : false;
+    // ajax object
+    wsajax.ajax = function() {
+        this.ajax.longPoll.call(this)
+    }
+    wsajax.ajax.longPoll = function() {
+        console.log(this)
+        jQuery.ajax({
+            url: this.host,
+            type: "GET",
+            dataType: "jsonp",
+//            dataType: "html",
+            complete: function() {
+                console.log("started ajax polling...");
+            },
+            success:  function(data) {
+                console.log("recieved message... "+data);
+                //wsajax.ajax.longPoll(this.host);
+            },
+            error:  function(jxhr, msg) {
+                console.log("Error: "+msg);
+            }
+        })
     }
 
-})();
+    // send message
+    wsajax.send = function(msg) {
+        if(this.websockets) {
+            this.connection.send('{ "callback": "random", "method": "'+msg+'" }')
+        } else {
+        }
+    }
+
+    // set window variable for global use
+    window.wsajax = wsajax;
+
+})(window);

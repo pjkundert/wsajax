@@ -18,7 +18,42 @@
                 rel="javascript"
                 src="js/wsajax.js"></script>
         <script type="text/javascript">
-            wsajax()
+            wsajax.connect({
+                webSocketHost:	"ws://localhost:8600/api",
+                ajaxHost:	"http://localhost:8600/api"
+            });
+
+            // Unit test logging
+            (function() {
+                // test to see if script loaded
+                console.log("connect.js has loaded")
+
+                var execTest = function(test, msg) {
+                    var t	= test();
+                    var r	= t ? "\tSuccess" : "\t\t\t! FAILED";
+                    console.log(msg+":"+r);
+                    return t;
+                }
+
+                // object of tests
+                var tests = {
+                    // check if wsajax exists
+                    conExists: function() {
+                        if(typeof(wsajax)=="function") {
+                            return true;
+                        } else {
+                            return false;
+                        }
+                    }
+                }
+
+                // assign global variable
+                window.runUnitTests = function() {
+                    return execTest(tests.conExists, "check if wsajax exists") ? true : false;
+                }
+
+            });
+
         </script>
     </body>
 </html>
