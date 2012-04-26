@@ -12,35 +12,79 @@
         if( ! (this instanceof wsajax)) {
             return new wsajax();
         }
-
         return this;
-    })
+    });
 
-    var init = (function () {
-        try {
-            websockets		= WebSocket || MozWebSocket ? true : false
-            method		= WebSocket ? "WebSocket" : MozWebSocket ? "MozWebSocket" : "Ajax";
-        } catch(err) {
-            console.log(err.type)
+    // constructor for wsajax
+    (function () {
+        var method, websockets;
+
+        // error logging function for Chrome and Firefox
+        var logError = function(err) {
+            if(typeof(err)=="object") {
+                if(err.message) {
+                    console.log(err.message)
+                } else {
+                    console.log(err)
+                }
+            }
         }
-        console.log(method)
-        console.log(websockets)
-        wsajax.prototype.method		= method
-        wsajax.prototype.websockets	= websockets
+
+        // first check if MozWebSocket is defined Firefox
+        try {
+            method			= MozWebSocket ? "MozWebSocket" : false;
+            websockets			= true
+        } catch(err) {
+            logError(err);
+
+            // then check if WebSocket is defined for Chrome
+            try {
+                method			= WebSocket ? "WebSocket" : false;
+                websockets		= true
+            } catch(err) {
+                logError(err);
+
+                // default to ajax for all other platforms
+                method			= "Ajax"
+                websockets		= false
+            }
+        }
+
+        // set values on the wsajax object
+        wsajax.prototype.method		= method;
+        wsajax.prototype.websockets	= websockets;
+        wsajax.method			= method;
+        wsajax.websockets		= websockets;
     })();
 
-    wsajax.prototype = {
-        connect: function(host) {
-            console.log(this.method)
-            console.log("ws = new "+this.method+"("+host+")")
-            return this
-        }
-    }
-    wsajax.connect = function (host) {
-        return wsajax().connect(host)
+    // set window variable for global use
+    window.wsajax = wsajax
+
+    // connect function usage: wsajax().connect()
+    wsajax.prototype.connect = function(host) {
+        // if host is undefined set host to ...
+        var host		= host ? host : "ws://localhost:9000/ws"
+        var run			= "var ws = new "+this.method+"('"+host+"')"
+        console.log(run)
+        eval(run)
+        return ws
     }
 
-    window.wsajax = wsajax
+    // connect function usage: wsajax.connect()
+    //   - need to make this work instead of wsajax().connect()
+    // problem:
+    //   - scope of this is wrong
+    wsajax.connect = function (host) {
+        // if host is undefined set host to ...
+        var host		= host ? host : "ws://localhost:9000/ws"
+        var run			= "var ws = new "+wsajax.method+"('"+host+"')"
+        eval(run)
+        return ws
+
+        // bad fix for scope of this
+//        return wsajax().connect.call(this(),host)
+    }
+
 })(window);
 
 
